@@ -1,0 +1,29 @@
+﻿name: Smoke
+
+on: [push, pull_request]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scikit-learn matplotlib seaborn pyyaml jinja2 pytest pytest-timeout
+
+      - name: Run smoke test
+        run: python tests/smoke_test.py
+
+      - name: Build Gradio (UI import check)
+        run: |
+          pip install gradio
+          python -c "import sys; sys.path.insert(0, '.'); from app.gradio_chat import build_state; print('Gradio state builder OK')"

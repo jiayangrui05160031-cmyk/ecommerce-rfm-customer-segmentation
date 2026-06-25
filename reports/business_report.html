@@ -1,0 +1,177 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>电商 RFM 业务分析报告</title><style>body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;max-width:1100px;margin:32px auto;padding:0 24px;color:#222}h1{font-size:28px;margin-bottom:4px}h2{border-left:4px solid #3a6df0;padding-left:8px;margin-top:32px}.meta{color:#666;font-size:13px;margin-bottom:24px}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}.kpi{background:#f6f8fa;border-radius:8px;padding:16px}.kpi .label{font-size:12px;color:#666}.kpi .value{font-size:22px;font-weight:600;color:#3a6df0}table{border-collapse:collapse;width:100%;font-size:13px;margin-top:12px}th,td{border:1px solid #e1e4e8;padding:6px 10px;text-align:left}th{background:#f6f8fa}.P0{color:#d73a49;font-weight:600}.P1{color:#e36209}.P2{color:#6f42c1}.P3{color:#586069}.footer{margin-top:40px;font-size:12px;color:#888;text-align:center}</style></head><body><h1>电商 RFM 业务分析报告</h1>
+<div class="meta">生成时间: 2026-06-25 21:11:40 · 数据源: mock · 客户数: 200 · 交易数: 1219</div>
+
+<h2>核心指标</h2>
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">客户数</div><div class="value">200</div></div><div class="kpi"><div class="label">营收总额</div><div class="value">$91,923</div></div><div class="kpi"><div class="label">平均购买次数</div><div class="value">6.1</div></div><div class="kpi"><div class="label">平均客单</div><div class="value">$70.50</div></div>
+</div>
+
+<h2>客户分群</h2>
+<table>
+  <thead><tr><th>Cluster</th><th>业务标签</th><th>优先级</th><th>客户数</th><th>营收占比</th><th>一句话定位</th></tr></thead>
+  <tbody>
+    
+    <tr>
+      <td>0</td>
+      <td>Champions 冠军 VIP</td>
+      <td class="P2">P2</td>
+      <td>80</td>
+      <td>26.15%</td>
+      <td></td>
+    </tr>
+    
+    <tr>
+      <td>1</td>
+      <td>Loyal Customers 忠诚用户</td>
+      <td class="P2">P2</td>
+      <td>46</td>
+      <td>65.42%</td>
+      <td></td>
+    </tr>
+    
+    <tr>
+      <td>2</td>
+      <td>Potential Loyalists 潜力用户</td>
+      <td class="P2">P2</td>
+      <td>74</td>
+      <td>8.43%</td>
+      <td></td>
+    </tr>
+    
+  </tbody>
+</table>
+
+<h2>CLV 概览</h2>
+<table>
+  <thead><tr><th>指标</th><th>数值</th></tr></thead>
+  <tbody>
+    <tr><td>mean</td><td>22.57</td></tr><tr><td>median</td><td>0.07</td></tr><tr><td>p90</td><td>73.15</td></tr><tr><td>p99</td><td>165.74</td></tr><tr><td>max</td><td>214.85</td></tr>
+  </tbody>
+</table>
+
+<h2>流失风险分布</h2>
+<table>
+  <thead><tr><th>风险分桶</th><th>客户数</th><th>占比</th></tr></thead>
+  <tbody>
+    <tr><td>低风险 (<0.3)</td><td>117</td><td>58.5%</td></tr><tr><td>中风险 (0.3-0.6)</td><td>0</td><td>0.0%</td></tr><tr><td>高风险 (0.6-0.8)</td><td>0</td><td>0.0%</td></tr><tr><td>极高风险 (>0.8)</td><td>83</td><td>41.5%</td></tr>
+  </tbody>
+</table>
+
+<h2>Top 10 Next-Best-Action</h2>
+<table>
+  <thead><tr><th>Customer</th><th>Segment</th><th>推荐动作</th><th>渠道</th><th>预期转化</th><th>预期 ROI</th><th>理由</th></tr></thead>
+  <tbody>
+    
+    <tr>
+      <td>10662</td>
+      <td>Loyal Customers 忠诚用户</td>
+      <td>会员日特权 + 积分翻倍</td>
+      <td>app_push</td>
+      <td>0.15</td>
+      <td>-1.0</td>
+      <td>default rule for Loyal</td>
+    </tr>
+    
+    <tr>
+      <td>12044</td>
+      <td>Champions 冠军 VIP</td>
+      <td>VIP 专属 9 折 + 私人客服回访</td>
+      <td>email</td>
+      <td>0.18</td>
+      <td>-0.98</td>
+      <td>default rule for Champions</td>
+    </tr>
+    
+    <tr>
+      <td>12773</td>
+      <td>Potential Loyalists 潜力用户</td>
+      <td>会员日特权 + 积分翻倍</td>
+      <td>app_push</td>
+      <td>0.075</td>
+      <td>nan</td>
+      <td>default rule for Loyal</td>
+    </tr>
+    
+    <tr>
+      <td>13122</td>
+      <td>Loyal Customers 忠诚用户</td>
+      <td>会员日特权 + 积分翻倍</td>
+      <td>app_push</td>
+      <td>0.15</td>
+      <td>-1.0</td>
+      <td>default rule for Loyal</td>
+    </tr>
+    
+    <tr>
+      <td>13353</td>
+      <td>Loyal Customers 忠诚用户</td>
+      <td>会员日特权 + 积分翻倍</td>
+      <td>app_push</td>
+      <td>0.15</td>
+      <td>-1.0</td>
+      <td>default rule for Loyal</td>
+    </tr>
+    
+    <tr>
+      <td>13942</td>
+      <td>Champions 冠军 VIP</td>
+      <td>VIP 专属 9 折 + 私人客服回访</td>
+      <td>email</td>
+      <td>0.18</td>
+      <td>7.05</td>
+      <td>default rule for Champions</td>
+    </tr>
+    
+    <tr>
+      <td>15247</td>
+      <td>Champions 冠军 VIP</td>
+      <td>VIP 专属 9 折 + 私人客服回访</td>
+      <td>email</td>
+      <td>0.18</td>
+      <td>-1.0</td>
+      <td>default rule for Champions</td>
+    </tr>
+    
+    <tr>
+      <td>15743</td>
+      <td>Loyal Customers 忠诚用户</td>
+      <td>会员日特权 + 积分翻倍</td>
+      <td>app_push</td>
+      <td>0.15</td>
+      <td>-1.0</td>
+      <td>default rule for Loyal</td>
+    </tr>
+    
+    <tr>
+      <td>16112</td>
+      <td>Potential Loyalists 潜力用户</td>
+      <td>会员日特权 + 积分翻倍</td>
+      <td>app_push</td>
+      <td>0.15</td>
+      <td>3.78</td>
+      <td>default rule for Loyal</td>
+    </tr>
+    
+    <tr>
+      <td>16870</td>
+      <td>Champions 冠军 VIP</td>
+      <td>VIP 专属 9 折 + 私人客服回访</td>
+      <td>email</td>
+      <td>0.18</td>
+      <td>-1.0</td>
+      <td>default rule for Champions</td>
+    </tr>
+    
+  </tbody>
+</table>
+
+<h2>Chat-with-Data 演示示例</h2>
+<table>
+  <thead><tr><th>问题</th><th>回答</th></tr></thead>
+  <tbody>
+    <tr><td>客户 12345 的状态</td><td>{"text": "Mock response"}</td></tr><tr><td>Champions 群体表现如何</td><td>{"text": "Mock response"}</td></tr><tr><td>最近营收趋势</td><td>{"text": "Mock response"}</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">Generated by ecommerce-rfm-customer-segmentation</div>
+</body></html>

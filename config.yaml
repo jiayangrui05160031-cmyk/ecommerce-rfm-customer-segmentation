@@ -1,0 +1,52 @@
+﻿# 电商 RFM 分析 - 统一配置
+# 所有模块从这里读参数，不要在代码里 hard-code
+
+data:
+  source: retail_ii                # retail_ii | olist | mock
+  retail_ii_parts_dir: .
+  olist_raw_dir: data/raw/olist
+  processed_dir: data/processed
+
+clustering:
+  k_range: [3, 4, 5, 6, 7]
+  primary_k: 4
+  algorithms: [kmeans, gmm, hdbscan]
+  use_umap: true
+  umap_n_components: 2
+  random_state: 42
+
+clv:
+  prediction_horizon_days: 365
+  bg_nbd_penalizer: 0.01
+  time_unit_days: 30
+
+churn:
+  definition_days: 90
+  test_size: 0.2
+  random_state: 42
+  n_estimators: 300
+  learning_rate: 0.05
+
+survival:
+  duration_col: T
+  event_col: E
+
+mining:
+  cohort_period: M
+  market_basket_min_support: 0.01
+  market_basket_min_threshold: 1.0
+  forecast_horizon_months: 6
+
+llm:
+  # 默认走 mock (离线 / CI)；调试时改为 minimax 并设置 MINIMAX_API_KEY
+  provider: mock               # mock | minimax | deepseek | openai | anthropic | ollama
+  model: MiniMax-Text-01
+  api_key_env: MINIMAX_API_KEY
+  base_url: https://api.minimaxi.com/v1
+  temperature: 0.3
+  max_tokens: 1024
+  ollama_base_url: http://localhost:11434
+
+reports_dir: reports
+images_dir: images
+random_state: 42

@@ -1,0 +1,69 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# 虚拟环境
+venv/
+env/
+.venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# =========================
+# 大数据文件（不提交到 Git）
+# =========================
+# 原始 xlsx（43MB）—— 仓库里只放拆分后的 CSV 分块
+online_retail_II.xlsx
+
+# 清洗后的 pkl（51MB）—— 运行时由 01 notebook 自动重建
+data/processed/cleaned_retail.pkl
+
+# 用户本地可能下载的其它大文件
+*.xlsx
+*.zip
+*.7z
+*.parquet
+data/processed/*.pkl
+data/processed/*.parquet
+data/processed/*.feather
+
+# 测试临时文件
+*.bak
+test_*.py
+# ---- 升级追加 ----
+
+# AI agent artifacts
+src/agents/__pycache__/
+
+# Gradio tmp
+gradio_cached_examples/
+flagged/
+
+# Local retail CSV parts (~100MB total)
+online_retail_II_part*.csv
+
+# Windows shortcut
+*.lnk
+
+
+# 全局 pycache 排除 (避免 .pyc 被误加)
+src/__pycache__/

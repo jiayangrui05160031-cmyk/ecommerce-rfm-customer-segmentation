@@ -1,295 +1,230 @@
-# ecommerce-rfm-customer-segmentation
-# 电商 RFM 用户分群与精准营销分析
+﻿# 电商 RFM 用户分群与精准营销分析
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
-[![Pandas](https://img.shields.io/badge/Pandas-2.0%2B-150458?logo=pandas)](https://pandas.pydata.org/)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.2%2B-F7931E?logo=scikit-learn)](https://scikit-learn.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?logo=jupyter)](notebooks/)
 
-> 基于 **RFM 模型 + K-Means 聚类** 的电商用户价值分群与营销策略推荐
-> · 数据源: Online Retail II (UK 2009–2011, ~106 万条交易)
-> · 输出: 4 类用户画像 + 营销动作清单
+> **RFM + 多算法聚类 + CLV + Churn 预测 + 3 个 AI Agent** 的端到端电商用户价值分析流水线。
+> 一键产出业务报告 (`reports/business_report.html`) 和 Gradio Chat-with-Data 演示 (`python -m app.gradio_chat`)。
 
 ---
 
-## 📑 目录
+## 为什么是它
 
-- [项目背景](#-项目背景)
-- [核心结论](#-核心结论)
-- [数据说明](#-数据说明)
-- [技术栈](#-技术栈)
-- [项目结构](#-项目结构)
-- [快速开始](#-快速开始)
-- [分析流程](#-分析流程)
-- [聚类与画像](#-聚类与画像)
-- [营销策略输出](#-营销策略输出)
-- [可视化预览](#-可视化预览)
-- [常见问题](#-常见问题)
-- [License](#-license)
+这是一个**真正端到端**的电商客户分析项目，不是又一个"RFM + K-Means 入门教程"：
 
----
-
-## 🎯 项目背景
-
-电商行业的核心命题: **把有限的营销预算投到最有价值的客户身上**。
-
-本项目以经典的 **RFM 模型** (Recency 近度 / Frequency 频度 / Monetary 金额) 为基础，结合 **K-Means 聚类**，将客户分成 4 类价值群体，并针对每类群体给出可落地的营销动作建议。
-
-**业务价值**:
-- 识别 **高价值客户** (前 20%) 贡献了 60%+ 的营收 (二八法则)
-- 针对 **沉睡用户** 设计低成本唤醒策略，提升 ROI
-- 为新客设计 **首单复购券** 漏斗，提升 30 日留存
+| 能力层 | 实现 |
+|--------|------|
+| **特征工程** | RFM (3 维) + 行为特征 (10 维: 客单价方差/品类宽度/活跃月份/退货率/IPI) |
+| **聚类对比** | K-Means / Gaussian Mixture / HDBSCAN 三模型横评，Silhouette / Davies-Bouldin / Calinski-Harabasz 三指标 |
+| **CLV 建模** | BG/NBD + Gamma-Gamma (Fader & Hardie)，业界事实标准 |
+| **流失预测** | LightGBM + 行为特征，输出 `churn_prob` 与 SHAP 解释 |
+| **商品关联** | FP-Growth 关联规则 (mlxtend) |
+| **Cohort 留存** | 三角留存矩阵 + 队列营收曲线 |
+| **时序预测** | Prophet / Holt-Winters 双路径降级 |
+| **AI Agent 层** | 3 个 Agent: Segment Naming / Strategy Composer (NBA) / Chat-with-Data |
+| **可视化交付** | HTML 业务报告 (Jinja2) + Gradio Chat UI |
+| **工程化** | 统一 config、Mock 数据集、CI smoke test、模块化 |
 
 ---
 
-## 🏆 核心结论
+## 5 分钟启动
 
-基于聚类结果 (k=4, Silhouette ≈ 0.42) 与业务命名,4 类用户画像如下:
+```bash
+git clone https://github.com/<you>/ecommerce-rfm-customer-segmentation.git
+cd ecommerce-rfm-customer-segmentation
+pip install -r requirements.txt
+python run_modern.py --source mock     # 30 秒跑完整个 pipeline
+```
 
-| 客户群 | 占比 | 营收贡献 | 关键特征 | 营销动作 | 预期效果 |
-|--------|------|---------|---------|---------|---------|
-| 🏆 **冠军 VIP** | ~20% | ~60% | 高 R 低 F 高 M | VIP 客户经理 + 新品优先购 | 留存 +15%, 客单 +20% |
-| 💎 **忠诚用户** | ~25% | ~25% | 中低 R 高 F 中 M | 会员日特权 + 积分翻倍 | 客单 +10%, 复购 +8% |
-| 🌱 **潜力新客** | ~25% | ~10% | 低 R 低 F 低 M | 首单 8 折复购券 + 欢迎邮件 | 30 日复购 +30% |
-| 😴 **沉睡用户** | ~30% | ~5% | 高 R 低 F 低 M | 唤醒短信 + 大额折扣 | 唤醒率 5–10% |
-
-> **二八法则验证**: 前 20% 客户贡献了 60%+ 营收; 沉睡用户占 30% 但仅贡献 5% 营收。
-
----
-
-## 📊 数据说明
-
-| 项 | 说明 |
-|----|------|
-| **数据源** | [Online Retail II (UCI / Kaggle)](https://www.kaggle.com/datasets/vijayuv/onlineretail) |
-| **时间跨度** | 2009-12-01 ~ 2011-12-09 |
-| **原始规模** | 1,067,371 条交易, 5,942 个客户 |
-| **清洗后** | ~805,000 条 (去除退货/缺客户ID/异常单价) |
-| **特征** | InvoiceNo, StockCode, Description, Quantity, InvoiceDate, UnitPrice, CustomerID, Country |
-
-### 数据切分处理
-
-原始数据集 ~43MB,超过 GitHub 单文件 25MB 上限。
-本项目已将其拆为 **5 个 < 20MB 的 CSV 分块** (`online_retail_II_part1.csv` ~ `part5.csv`)。
-`src/data_loader.py` 自动识别并拼接。
+跑完后:
+- `reports/business_report.html` ← 双击打开看完整报告
+- `data/processed/` ← 中间产物 (pkl)
+- 控制台输出聚类对比表 + CLV/Churn 概览 + Agent 命名结果
 
 ---
 
-## 🛠️ 技术栈
+## AI Agent 层（3 个核心）
 
-| 类别 | 工具 |
-|------|------|
-| **数据处理** | pandas, numpy |
-| **机器学习** | scikit-learn (KMeans, StandardScaler, RobustScaler, silhouette_score, PCA) |
-| **可视化** | matplotlib, seaborn, plotly |
-| **开发** | Jupyter Notebook, Python 3.10+ |
-| **数据 I/O** | openpyxl, xlrd |
+### 1. Segment Naming Agent
+把 `Cluster ID = 0` 这种机器语言翻译成"高价值低频休眠客户 (P1)"这种业务语言。
+LLM 只读结构化画像，输出业务标签 + 优先级 + 一句话定位。`MockLLM` 兜底。
 
-详见 [`requirements.txt`](requirements.txt)
+### 2. Strategy Composer Agent (Next-Best-Action)
+对每个客户输出:
+- `recommended_action` (推荐营销动作)
+- `channel` (email/sms/app_push)
+- `expected_conversion_rate`
+- `expected_revenue_per_customer`
+- `expected_roi`
+- `reasoning` (为什么推荐这个)
+
+LLM 按 segment 批量调用 + 规则引擎兜底，最终产出 `nba_recommendations.csv`。
+
+### 3. Chat-with-Data Agent
+Gradio UI，可以用自然语言问:
+- "客户 12345 的状态" → 调 `query_customer`
+- "Champions 群体表现如何" → 调 `query_segment`
+- "最近营收趋势" → 调 `query_trend`
+
+启动: `python -m app.gradio_chat`，浏览器打开 http://localhost:7860
 
 ---
 
-## 📁 项目结构
+## Smoke Test
+
+端到端 30 秒验证 (`tests/smoke_test.py`):
+
+- 用 mock 数据 (200 客户) + MockLLM 跑完整 10 步 pipeline
+- 不依赖任何 API key 或网络
+- 验证关键产物 (HTML report / NBA csv) 生成
+- CI 自动跑 (`.github/workflows/smoke.yml`)
+
+```bash
+python tests/smoke_test.py
+# [smoke] PASSED in 2.09s
+```
+
+---
+
+## 数据源
+
+通过 `config.yaml` 切换，默认走 mock (开箱即用):
+
+| source | 描述 | 规模 |
+|--------|------|------|
+| `mock` | 合成数据，含 3 个 engineered cohort (Champions/Loyal/Hibernating) | 200 客户, ~1200 行 |
+| `retail_ii` | Online Retail II (UK 2009-2011)，仓库已有 5 个分块 CSV | ~106 万行, 5942 客户 |
+| `olist` | Brazilian E-Commerce (2016-2018)，下载后放入 `data/raw/olist/` | ~10 万订单, 9.4 万客户 |
+
+新增数据源: 在 `src/data_sources/` 下加一个继承 `BaseDataSource` 的类并 `@register`。
+
+---
+
+## 项目结构
 
 ```
 ecommerce-rfm-customer-segmentation/
-├── README.md                    # 本文件
-├── LICENSE                      # MIT 协议
-├── .gitignore                   # 排除大文件(pkl/xlsx等)
-├── requirements.txt             # 依赖清单
+├── config.yaml                  # 统一配置（数据源/LLM/算法参数）
+├── requirements.txt
+├── run_all.py                   # 旧版入口（RFM+KMeans）
+├── run_modern.py                # 新版入口（10 步完整 pipeline）
 │
-├── run_all.py                   # 一键运行(无 Jupyter 也能跑)
+├── src/
+│   ├── config.py                # AppConfig 加载
+│   ├── data_sources/            # 多数据源抽象层
+│   │   ├── base.py
+│   │   ├── retail_ii.py
+│   │   ├── olist.py
+│   │   └── mock.py
+│   ├── features/rfm.py          # RFM + 行为特征
+│   ├── models/
+│   │   ├── clustering.py        # K-Means/GMM/HDBSCAN 对比
+│   │   ├── clv.py               # BG/NBD + Gamma-Gamma
+│   │   └── churn.py             # LightGBM
+│   ├── mining/
+│   │   ├── market_basket.py     # FP-Growth
+│   │   ├── cohort.py            # 留存矩阵
+│   │   └── forecasting.py       # Prophet/Holt-Winters
+│   ├── agents/                  # AI Agent 层
+│   │   ├── llm_factory.py       # DeepSeek/OpenAI/Anthropic/Ollama/Mock
+│   │   ├── base.py
+│   │   ├── prompts.py
+│   │   ├── segment_namer.py     # Agent 1
+│   │   ├── strategy_composer.py # Agent 2 (NBA)
+│   │   ├── chat_agent.py        # Agent 3
+│   │   └── tools.py             # Chat agent 工具集
+│   └── reports/html_report.py   # Jinja2 模板报告
 │
-├── online_retail_II_part1.csv   # 数据分块 1 (~17MB)
-├── online_retail_II_part2.csv   # 数据分块 2
-├── online_retail_II_part3.csv   # 数据分块 3
-├── online_retail_II_part4.csv   # 数据分块 4
-├── online_retail_II_part5.csv   # 数据分块 5
+├── app/gradio_chat.py           # Chat-with-Data UI
+├── tests/smoke_test.py          # 端到端 30 秒 smoke
+├── templates/                   # 报告模板（预留）
 │
-├── src/                         # 核心代码
-│   ├── data_loader.py           # 数据加载(自动识别分块)
-│   ├── rfm.py                   # RFM 建模/打分/分级
-│   └── visualization.py         # 可视化(雷达图/PCA 散点)
+├── data/processed/              # 中间产物 (pkl)
+├── reports/business_report.html # 最终报告（打开即看）
+├── images/                      # 静态图（雷达/帕累托）
 │
-├── notebooks/                   # 分析流程
-│   ├── 01_data_cleaning.ipynb
-│   ├── 02_rfm_analysis.ipynb
-│   ├── 03_clustering.ipynb
-│   └── 04_visualization.ipynb
-│
-├── scripts/
-│   └── split_data.py            # 把 xlsx 拆成 5 个 CSV 的工具脚本
-│
-├── images/                      # 生成的图表
-│   ├── rfm_distribution.png
-│   ├── k_selection.png
-│   ├── revenue_pareto.png
-│   └── rfm_radar.png
-│
-├── data/
-│   ├── raw/                     # 原始数据(空,数据放根目录)
-│   └── processed/               # 清洗后数据(.gitignore 排除)
-│
-├── push_to_github.ps1           # 一键推送到 GitHub 脚本
-└── GITHUB_GUIDE.md              # 详细部署指南
+└── .github/workflows/smoke.yml  # CI
 ```
 
 ---
 
-## 🚀 快速开始
+## 切换到真实 LLM（MiniMax / DeepSeek / GPT-4o / Ollama）
 
-### 1. 克隆仓库
+默认用 MockLLM（CI 友好）。要跑真实 LLM，把 `config.yaml` 里的 `llm.provider` 改成对应名字 + 配 API key：
+
+### MiniMax（默认推荐，已验证）
+
+`MiniMaxChat` 用 `urllib` 直连 `https://api.minimaxi.com/v1`，**不需要 `openai` SDK**。模型固定 `MiniMax-Text-01`。
+
+```powershell
+$env:MINIMAX_API_KEY = "<你的 MINIMAX_API_KEY>"
+# config.yaml
+llm:
+  provider: minimax
+  model: MiniMax-Text-01
+  api_key_env: MINIMAX_API_KEY
+  base_url: https://api.minimaxi.com/v1
+```
+
+> ⚠️ **请勿把 API key 直接写进代码 / 配置文件 / README**。本仓库的 `config.yaml` 只引用环境变量名 (`api_key_env`)，运行前请通过 shell 注入。
+
+跑验证（30 秒）：
 
 ```bash
-git clone https://github.com/<your-username>/ecommerce-rfm-customer-segmentation.git
-cd ecommerce-rfm-customer-segmentation
+python tests/smoke_real_llm.py
+# [DONE] All 3 agents answered via real MiniMax LLM.
 ```
 
-### 2. 安装依赖
+真实跑出的样本（200 客户 mock 数据集）：
+
+| Agent | 输出 |
+|-------|------|
+| **Segment Naming** | 活跃复购客 [P1] / 高价值忠诚客 [P0] / 沉睡流失客 [P2] |
+| **Strategy Composer** | 200 NBA 行，channel 分布 `app_push 80 + email 74 + in_app 46`，平均 ROI 49.16 |
+| **Chat** | `query_customer` / `query_segment` / `query_trend` 三个意图都路由到正确工具 |
+
+### DeepSeek / OpenAI / Anthropic
 
 ```bash
-pip install -r requirements.txt
+pip install langchain-openai litellm
+export DEEPSEEK_API_KEY=sk-xxx
+# config.yaml: provider: deepseek, model: deepseek-chat
 ```
 
-### 3. 方式 A: 命令行一键运行 (推荐新手)
+### Ollama（本地 Qwen2.5 / Llama 3）
 
 ```bash
-python run_all.py
+ollama pull qwen2.5:7b
+# config.yaml: provider: ollama, model: qwen2.5:7b
+# base_url 默认 http://localhost:11434
 ```
 
-会自动执行 **数据清洗 → RFM 建模 → 聚类 → 可视化** 全流程,结果输出到 `images/` 与 `data/processed/`。
+---
 
-### 4. 方式 B: Jupyter 交互分析
+## 主要交付物
 
-```bash
-jupyter notebook
-```
-
-按顺序打开 `notebooks/01_data_cleaning.ipynb` → `02_rfm_analysis.ipynb` → `03_clustering.ipynb` → `04_visualization.ipynb`。
+| 文件 | 价值 |
+|------|------|
+| `reports/business_report.html` | **杀手锏**：1 个 HTML = 完整业务报告 (KPI/分群/CLV/Churn/NBA/Chat 示例) |
+| `data/processed/nba_recommendations.csv` | 每个客户一行营销策略 + ROI |
+| `app/gradio_chat.py` | 演示页：浏览器跟你的数据对话 |
+| `tests/smoke_test.py` | 30 秒验证全 pipeline |
+| `reports/clustering_comparison.csv` | K-Means/GMM/HDBSCAN 三模型对比表 |
 
 ---
 
-## 🔬 分析流程
+## 下一步路线
 
-```
-┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│  01 数据清洗     │ →  │  02 RFM 建模     │ →  │  03 K-Means 聚类 │ →  │  04 可视化&策略  │
-│                  │    │                  │    │                  │    │                  │
-│ · 去重/去空      │    │ · R: 最近购买距今│    │ · log1p 压长尾  │    │ · 雷达图         │
-│ · 去除退货单(C开头)│    │ · F: 购买频次    │    │ · RobustScaler   │    │ · 帕累托图       │
-│ · 过滤异常值     │    │ · M: 累计消费    │    │ · Elbow + Silhouette │    · 散点图(PCA)    │
-│ · 计算 TotalPrice│    │ · 1-5 打分       │    │ · 业务优先 k 选择│    │ · 营销策略输出   │
-└──────────────────┘    └──────────────────┘    └──────────────────┘    └──────────────────┘
-```
-
-### 关键方法论
-
-- **RFM 打分**: R/M 用 `qcut` 按分位数切 5 段; F 用 `rank(method='first')` 后再 qcut 避免大量重复值集中
-- **数据预处理**: 因 RFM 三列严重右偏长尾,先 `log1p` 压,再用 `RobustScaler` (比 StandardScaler 对极值更稳)
-- **k 值选择**: 业务优先 —— 在 Silhouette 下降不超 20% 范围内取最大 k (商业上 4~6 类最便于运营落地)
-- **业务命名**: 按 M 均值降序排序后,按位次映射到 Champions / Loyal / New / Hibernating
+- [ ] 接入真实 LLM 后用 Analyst Debate Team 提升结论可信度
+- [ ] 加入 Anomaly Hunter Agent（自动发现 segment 异常）
+- [ ] 把 HTML 报告升级为 Plotly 交互式 dashboard
+- [ ] 接入 Vector DB 做分析结果的 RAG 检索
 
 ---
 
-## 🧩 聚类与画像
+## License
 
-```python
-from src.data_loader import load_cleaned_retail
-from src.rfm import build_rfm_table, rfm_score, rfm_level
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import RobustScaler
+MIT. 数据: UCI Online Retail II / Kaggle Brazilian E-Commerce (Olist).
 
-df = load_cleaned_retail()
-rfm = build_rfm_table(df)
-rfm = rfm_score(rfm)
 
-X = rfm[['Recency', 'Frequency', 'Monetary']].values
-X_scaled = RobustScaler().fit_transform(np.log1p(X))
-
-km = KMeans(n_clusters=4, random_state=42, n_init=10)
-rfm['Cluster'] = km.fit_predict(X_scaled)
-```
-
-### 业务映射规则
-
-| 排名 | 维度 | 业务标签 |
-|------|------|---------|
-| M 均值最高 | 高 R 低 F 高 M | 🏆 Champions 冠军 VIP |
-| M 均值次高 | 中 R 中 F 中 M | 💎 Loyal Customers 忠诚用户 |
-| M 均值次低 | 低 R 中 F 低 M | 🌱 New Customers 新客 |
-| M 均值最低 | 高 R 低 F 低 M | 😴 Hibernating 沉睡用户 |
-
----
-
-## 💼 营销策略输出
-
-运行后会在 `data/processed/marketing_strategy.csv` 输出每类用户的画像与营销动作建议,格式:
-
-| Cluster | Segment | Customers | Revenue | Revenue_Share_% | Strategy | Expected_Impact |
-|---------|---------|-----------|---------|-----------------|----------|-----------------|
-| 0 | Champions 冠军 VIP | 1,212 | 6,540,000 | 58.3% | VIP 专属客户经理 + 新品优先购 | +15% 留存, +20% 客单价 |
-| 1 | Loyal Customers 忠诚用户 | 1,485 | 2,890,000 | 25.8% | 会员日特权 + 积分翻倍 | +10% 客单价, +8% 复购 |
-| 2 | New Customers 新客 | 1,420 | 1,150,000 | 10.3% | 首单 7 日内 8 折复购券 | +30% 30 日复购 |
-| 3 | Hibernating 沉睡用户 | 1,825 | 540,000 | 4.8% | 唤醒短信 + 大额折扣 | 5-10% 唤醒率 |
-
----
-
-## 📈 可视化预览
-
-| 图表 | 文件 | 说明 |
-|------|------|------|
-| RFM 三维分布 | `images/rfm_distribution.png` | Recency / Frequency / Monetary 的直方图 |
-| K 值选择 | `images/k_selection.png` | Elbow + Silhouette 双图 |
-| 帕累托图 | `images/revenue_pareto.png` | 各群体营收贡献 |
-| 雷达图 | `images/rfm_radar.png` | 各群体 RFM 三维特征 |
-
-> 跑完 `python run_all.py` 后会自动生成到 `images/` 目录。
-
----
-
-## ❓ 常见问题
-
-**Q1: KMeans 报 ConvergenceWarning 怎么办?**
-```python
-KMeans(n_clusters=4, n_init=10, max_iter=500, random_state=42)
-```
-调高 `n_init` 与 `max_iter`。
-
-**Q2: 数据文件找不到?**
-确认 `online_retail_II_part1.csv` ~ `part5.csv` 5 个分块都在仓库根目录。
-或自行用 `scripts/split_data.py` 重新拆分。
-
-**Q3: 如何换数据集?**
-修改 `src/data_loader.py` 的列名映射,确保包含 `['CustomerID', 'InvoiceNo', 'InvoiceDate', 'TotalPrice']` 4 列即可。
-
-**Q4: 想换 K-Means 为其他聚类?**
-推荐替换为 `DBSCAN` (无需指定 k) 或 `GaussianMixture` (概率聚类)。`silhouette_score` 评估指标可继续使用。
-
-**Q5: Excel 原始文件 (.xlsx) 怎么生成?**
-```python
-# 在 data/raw/ 放好 online_retail_II.xlsx 后
-python scripts/split_data.py
-```
-会自动拆成 5 个 CSV 分块到仓库根目录。
-
----
-
-## 📝 License
-
-本项目采用 [MIT License](LICENSE)。数据来源: [Online Retail II (UCI Machine Learning Repository)](https://archive.ics.uci.edu/ml/datasets/Online+Retail+II),仅用于学习与研究。
-
----
-
-## ✨ 致谢
-
-- 数据来源: UCI / Kaggle Online Retail II 数据集
-- 方法论: RFM 模型 (Arthur Hughes, 1994)
-- 工具: pandas, scikit-learn, seaborn 社区
-
----
-
-<p align="center">
-  如果这个项目对你有帮助,欢迎 ⭐ Star!<br>
-  <sub>Built with ❤️ for data-driven marketing</sub>
-</p>

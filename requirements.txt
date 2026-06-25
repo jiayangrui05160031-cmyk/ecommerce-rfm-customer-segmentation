@@ -1,3 +1,4 @@
+﻿# Core
 pandas>=2.0.0
 numpy>=1.24.0
 scikit-learn>=1.2.0
@@ -7,3 +8,27 @@ plotly>=5.14.0
 jupyter>=1.0.0
 openpyxl>=3.1.0
 xlrd>=2.0.0
+pyyaml>=6.0
+jinja2>=3.1.0
+
+# Phase 2+ advanced analytics
+umap-learn>=0.5.5
+hdbscan>=0.8.33
+lifetimes>=0.11.3
+lightgbm>=4.3.0
+shap>=0.44.0
+mlxtend>=0.23.0
+prophet>=1.1.5
+statsmodels>=0.14.0
+
+# Phase 5 AI agents and UI
+langchain>=0.2.0
+langchain-openai>=0.1.0
+langchain-community>=0.2.0
+langgraph>=0.1.0
+litellm>=1.40.0
+gradio>=4.30.0
+
+# Tests
+pytest>=8.0.0
+pytest-timeout>=2.2.0
