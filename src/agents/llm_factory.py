@@ -16,7 +16,7 @@ import json
 import os
 import random
 from dataclasses import dataclass
-from src.config import get_config
+import src.config as _config  # 用模块对象而非 import-as-name, 保证 monkey-patch 生效
 
 
 class MockLLM:
@@ -159,7 +159,8 @@ class MiniMaxChat:
 
 def get_llm(temperature=None, max_tokens=None):
     """Return an LLM client per current config. Falls back to MockLLM."""
-    cfg = get_config().llm
+    # 用 _config.get_config() 而不是 get_config(), 让 monkey-patch 能生效
+    cfg = _config.get_config().llm
     provider = (cfg.provider or "mock").lower()
     temp = temperature if temperature is not None else cfg.temperature
     max_tok = max_tokens if max_tokens is not None else cfg.max_tokens
