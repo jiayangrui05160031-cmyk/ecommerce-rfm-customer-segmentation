@@ -96,8 +96,9 @@ python tests/smoke_test.py
 | `mock` | 合成数据，含 3 个 engineered cohort (Champions/Loyal/Hibernating) | 200 客户, ~1200 行 |
 | `retail_ii` | Online Retail II (UK 2009-2011)，仓库已有 5 个分块 CSV | ~106 万行, 5942 客户 |
 | `olist` | Brazilian E-Commerce (2016-2018)，下载后放入 `data/raw/olist/` | ~10 万订单, 9.4 万客户 |
+| `donation` | 合成捐赠数据，证明 pipeline 不绑死零售域 | 150 捐赠人, ~470 行 |
 
-新增数据源: 在 `src/data_sources/` 下加一个继承 `BaseDataSource` 的类并 `@register`。
+新增数据源: 在 `src/data_sources/` 下加一个继承 `BaseDataSource` 的类并 `@register`，并把列名映射塞进 `SchemaMapping`、领域规则塞进 `DomainProfile`。下面 [通用化](#通用化-任意-entity-event-数据) 这一节给出完整范式。
 
 ---
 
@@ -112,12 +113,14 @@ ecommerce-rfm-customer-segmentation/
 │
 ├── src/
 │   ├── config.py                # AppConfig 加载
-│   ├── data_sources/            # 多数据源抽象层
-│   │   ├── base.py
+│   ├── pipeline.py              # 统一 run_pipeline() 编排器（CLI 和 analyze() 都调它）
+│   ├── data_sources/            # 多数据源抽象层 + SchemaMapping/DomainProfile 契约
+│   │   ├── base.py              # Dataset / SchemaMapping / DomainProfile / profile_inference
 │   │   ├── retail_ii.py
 │   │   ├── olist.py
-│   │   └── mock.py
-│   ├── features/rfm.py          # RFM + 行为特征
+│   │   ├── mock.py
+│   │   └── donation.py          # 非零售示例：捐赠数据
+│   ├── features/rfm.py          # RFM + 行为特征（接受 mapping/profile）
 │   ├── models/
 │   │   ├── clustering.py        # K-Means/GMM/HDBSCAN 对比
 │   │   ├── clv.py               # BG/NBD + Gamma-Gamma
@@ -135,9 +138,11 @@ ecommerce-rfm-customer-segmentation/
 │   │   ├── chat_agent.py        # Agent 3
 │   │   └── tools.py             # Chat agent 工具集
 │   └── reports/html_report.py   # Jinja2 模板报告
-│
+
 ├── app/gradio_chat.py           # Chat-with-Data UI
-├── tests/smoke_test.py          # 端到端 30 秒 smoke
+├── tests/
+│   ├── smoke_test.py            # 端到端 30 秒 smoke
+│   └── test_unified_api.py      # 22 个单元测试：mapping/profile/analyze()/run_pipeline
 ├── templates/                   # 报告模板（预留）
 │
 ├── data/processed/              # 中间产物 (pkl)
@@ -146,6 +151,85 @@ ecommerce-rfm-customer-segmentation/
 │
 └── .github/workflows/smoke.yml  # CI
 ```
+
+---
+
+## 通用化: 任意 entity-event 数据
+
+Pipeline 不再绑死"客户-订单"语义。任何"谁-何时-做了什么-值多少"的长表都能直接喂进来。
+
+### 1. 显式声明 mapping
+
+```python
+from src import analyze, SchemaMapping, retail_profile
+
+mapping = SchemaMapping(
+    entity_id="user_id",          # 谁
+    event_id="session_id",        # 一次行为
+    timestamp="login_at",          # 何时
+    value="watch_minutes",         # 值多少
+)
+
+result = analyze(
+    my_df,                         # 任意长表
+    mapping=mapping,
+    profile="retail",              # 或自定义 DomainProfile
+    steps=["features", "cluster", "clv"],
+    skip_agents_for_speed=True,    # 离线/CI 不跑 LLM
+)
+print(result.rfm.head())
+```
+
+### 2. 让 pipeline 猜
+
+不想写 mapping？把 DataFrame 丢进去即可，启发式会按列名 + 唯一性自动猜:
+
+```python
+from src import analyze
+result = analyze(my_df)   # 自动跑 profile_inference()
+```
+
+`profile_inference()` 的判定规则:
+- `timestamp`: 第一个 datetime dtype 列，否则按列名 `date/time/timestamp/_at`
+- `entity_id`: 唯一率在 (0.5%, 50%) 区间内、unique count 最高的列
+- `event_id`: 唯一率最高、且列名含 `id/no/uid/uuid/key` 的列
+- `value`: 排除 id-like 列后、按列名优先级 `total > amount > revenue > value > price`
+- `country`: 列名匹配 `country/region/state/geo`
+
+### 3. 领域规则走 DomainProfile
+
+`DomainProfile` 把"零售专属逻辑"从通用代码里剥出来:
+
+```python
+from src.data_sources import DomainProfile
+
+donation_profile = DomainProfile(
+    name="donation",
+    value_label="TotalDonated",
+    enable_basket=False,        # 捐赠没有"购物篮"
+    enable_clv=True,            # 仍然算预期未来捐赠
+    is_return=None,             # 捐赠不存在"退货"
+)
+```
+
+`features/rfm.py` 里的 `is_return = df[invoice_col].astype(str).str.startswith("C")` 这类零售硬编码，已挪到 `retail_profile().is_return`。换领域零改动分析代码。
+
+### 4. 证明: 同代码跑捐赠数据
+
+```bash
+python run_modern.py --source donation --skip agents forecast
+# ================================================================
+#   E-COMMERCE RFM + AI AGENT PIPELINE (source=donation)
+# ================================================================
+#   规模: 470 行, 150 客户
+#   profile: donation
+#   Cluster: kmeans (composite=0.735)
+#   CLV 概览: {'mean': 87.05, 'median': 88.8, ...}
+#   Churn AUC: 0.97
+#   Cohort 矩阵: (36, 28)
+```
+
+`market_basket` 自动跳过（捐赠域无 basket），`return_rate` 整列填 0。同一个 `run_pipeline()`，不同 `Dataset.profile` —— 这就是分层抽象的价值。
 
 ---
 
