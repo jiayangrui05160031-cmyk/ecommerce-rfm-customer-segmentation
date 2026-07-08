@@ -61,9 +61,10 @@ def fit_churn(
         "n_active_months", "tenure_days", "return_rate", "avg_ipi_days",
     ]
     feat_cols = [c for c in candidate_cols if c in rfm.columns]
-    X = rfm[feat_cols].fillna(0).astype(float).values
+    X = rfm[feat_cols].fillna(0).astype(float)
     y = rfm["churn_label"].values
-    if not HAS_LGB:
+    class_counts = pd.Series(y).value_counts()
+    if not HAS_LGB or len(class_counts) < 2 or class_counts.min() < 2:
         rfm["churn_prob"] = _heuristic_prob(rfm)
         return rfm, ChurnResult(
             feature_cols=feat_cols, auc=float("nan"),
@@ -88,7 +89,7 @@ def fit_churn(
     if HAS_SHAP:
         try:
             explainer = shap.TreeExplainer(model)
-            shap_vals = explainer.shap_values(X[: min(500, len(X))])
+            shap_vals = explainer.shap_values(X.iloc[: min(500, len(X))])
             if isinstance(shap_vals, list):
                 shap_vals = shap_vals[1]
         except Exception:

@@ -75,13 +75,31 @@ def compare_clusterings(
 ):
     """Run multiple clustering algorithms and return (results, summary)."""
     feature_cols = feature_cols or ["Recency", "Frequency", "Monetary"]
-    X = np.log1p(rfm[feature_cols].values.astype(float))
+    raw = rfm[feature_cols].values.astype(float)
+    X = np.sign(raw) * np.log1p(np.abs(raw))
     X_scaled = RobustScaler().fit_transform(X)
     algorithms = list(algorithms or ["kmeans", "gmm"])
     if HAS_HDBSCAN and "hdbscan" not in algorithms:
         algorithms = algorithms + ["hdbscan"]
     results = []
     for algo in algorithms:
+        if algo == "hdbscan":
+            if not HAS_HDBSCAN:
+                continue
+            cluster_size = max(50, len(X_scaled) // (primary_k * 5))
+            model = hdbscan.HDBSCAN(min_cluster_size=cluster_size)
+            labels = model.fit_predict(X_scaled)
+            metrics = {
+                "silhouette": _safe_metric("silhouette", silhouette_score, X_scaled, labels),
+                "davies_bouldin": _safe_metric("davies_bouldin", davies_bouldin_score, X_scaled, labels),
+                "calinski_harabasz": _safe_metric("calinski_harabasz", calinski_harabasz_score, X_scaled, labels),
+            }
+            score = _composite(metrics)
+            results.append(ClusterResult(
+                algorithm=algo, labels=labels,
+                metrics=metrics, composite_score=score,
+            ))
+            continue
         for k in k_range:
             if algo == "kmeans":
                 model = KMeans(n_clusters=k, random_state=random_state, n_init=10)
@@ -92,12 +110,6 @@ def compare_clusterings(
                     covariance_type="full", n_init=5,
                 )
                 labels = model.fit(X_scaled).predict(X_scaled)
-            elif algo == "hdbscan":
-                if not HAS_HDBSCAN:
-                    continue
-                cluster_size = max(50, len(X_scaled) // (primary_k * 5))
-                model = hdbscan.HDBSCAN(min_cluster_size=cluster_size)
-                labels = model.fit_predict(X_scaled)
             else:
                 continue
             metrics = {

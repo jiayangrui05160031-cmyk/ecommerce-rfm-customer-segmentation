@@ -160,9 +160,9 @@ def build_html_report(
     seg_name_by_id = {int(s["cluster_id"]): s.get("business_name", "") for s in segments}
     nba_top_df = pd.DataFrame(nba_rows[:10])
     if not nba_top_df.empty and "Cluster" in rfm.columns:
-        cid_to_cluster = rfm["Cluster"].to_dict()
+        cid_to_cluster = {str(k): v for k, v in rfm["Cluster"].to_dict().items()}
         nba_top_df["segment_name"] = nba_top_df["customer_id"].map(
-            lambda x: seg_name_by_id.get(int(cid_to_cluster.get(int(x), -1)), "")
+            lambda x: seg_name_by_id.get(int(cid_to_cluster.get(str(x), -1)), "")
         )
     nba_top = nba_top_df.to_dict(orient="records") if not nba_top_df.empty else []
     template = Template(REPORT_TEMPLATE)

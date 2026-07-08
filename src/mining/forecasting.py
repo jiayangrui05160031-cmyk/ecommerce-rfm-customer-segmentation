@@ -31,12 +31,19 @@ def _holt_winters(history, horizon):
         start=last_date + pd.offsets.MonthEnd(1),
         periods=horizon, freq="ME",
     )
-    if not HAS_SM or len(history) < 6:
+    if not HAS_SM or len(history) < 3:
         return pd.DataFrame({"ds": future_dates, "yhat": [last_value] * horizon})
-    model = ExponentialSmoothing(
-        history["y"].astype(float), trend="add", seasonal="add", seasonal_periods=12,
-    ).fit(optimized=True)
-    pred = model.forecast(horizon)
+    values = history["y"].astype(float)
+    try:
+        if len(history) >= 24:
+            model = ExponentialSmoothing(
+                values, trend="add", seasonal="add", seasonal_periods=12,
+            ).fit(optimized=True)
+        else:
+            model = ExponentialSmoothing(values, trend="add", seasonal=None).fit(optimized=True)
+        pred = model.forecast(horizon)
+    except Exception:
+        pred = pd.Series([last_value] * horizon)
     return pd.DataFrame({"ds": future_dates, "yhat": pred.values})
 
 

@@ -2,7 +2,7 @@
 # 所有模块从这里读参数，不要在代码里 hard-code
 
 data:
-  source: retail_ii                # retail_ii | olist | mock
+  source: mock                     # retail_ii | olist | mock
   retail_ii_parts_dir: .
   olist_raw_dir: data/raw/olist
   processed_dir: data/processed

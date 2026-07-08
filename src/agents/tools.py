@@ -56,6 +56,9 @@ def query_customer(state, customer_id):
     try:
         if customer_id in rfm.index:
             row = rfm.loc[customer_id]
+        elif str(customer_id) in rfm.index.astype(str):
+            matched_id = rfm.index[rfm.index.astype(str).get_loc(str(customer_id))]
+            row = rfm.loc[matched_id]
         else:
             return ToolResult("Customer " + str(customer_id) + " not found.")
     except Exception as exc:

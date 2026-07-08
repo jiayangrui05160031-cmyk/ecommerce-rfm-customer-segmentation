@@ -37,13 +37,13 @@ def build_rfm_table(df: pd.DataFrame, snapshot_date: pd.Timestamp = None) -> pd.
 def rfm_score(rfm: pd.DataFrame, labels=None) -> pd.DataFrame:
     """
     对 RFM 三个维度按分位数打分（1-5 分），并生成 RFM_Score 字符串。
-    R/M 用 qcut 按升序切 5 段（数值越大分越高）；
+    R 用 qcut 反向打分（越近购买分越高）；M 用 qcut 按升序切 5 段（数值越大分越高）；
     F 用 rank(method='first') 后再 qcut 避免大量重复值落入同一区间。
     """
     labels = labels or [1, 2, 3, 4, 5]
 
     rfm = rfm.copy()
-    rfm["R_Score"] = pd.qcut(rfm["Recency"], 5, labels=labels)
+    rfm["R_Score"] = pd.qcut(rfm["Recency"], 5, labels=list(reversed(labels)))
     rfm["F_Score"] = pd.qcut(
         rfm["Frequency"].rank(method="first"), 5, labels=labels
     )

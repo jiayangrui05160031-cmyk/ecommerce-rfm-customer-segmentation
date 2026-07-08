@@ -2,6 +2,7 @@
 from __future__ import annotations
 import sys
 import time
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -83,7 +84,7 @@ def test_smoke_pipeline():
         ],
         dataset_name=ds.name,
         n_transactions=ds.n_rows,
-        out_path=project_root() / "reports" / "business_report.html",
+        out_path=Path(tempfile.gettempdir()) / "ecommerce_rfm_smoke_report.html",
     )
     assert Path(out).exists(), "HTML report not generated"
     size = Path(out).stat().st_size

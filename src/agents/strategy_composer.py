@@ -55,16 +55,20 @@ def _instantiate(customer_row, tpl):
     adj_conv = base_conv * (1.0 - 0.5 * churn)
     revenue = clv * adj_conv
     cost = float(tpl.get("cost_per_touch", 2.0) or 2.0)
+    incremental_profit = revenue - cost
     roi = (revenue - cost) / max(cost, 0.01)
+    priority = incremental_profit * (1.0 + churn)
     return {
-        "customer_id": int(customer_row["customer_id"]),
+        "customer_id": customer_row["customer_id"],
         "segment_name": str(customer_row.get("segment_name", "")),
         "recommended_action": tpl.get("recommended_action", DEFAULT_RULE[0]),
         "channel": tpl.get("channel", DEFAULT_RULE[1]),
         "expected_conversion_rate": round(adj_conv, 4),
         "expected_revenue_per_customer": round(revenue, 2),
         "cost_per_touch": cost,
+        "expected_incremental_profit": round(incremental_profit, 2),
         "expected_roi": round(roi, 2),
+        "campaign_priority_score": round(priority, 2),
         "reasoning": tpl.get("reasoning", ""),
     }
 
@@ -97,7 +101,7 @@ class StrategyComposerAgent(BaseAgent):
             df = df.rename(columns={"CustomerID": "customer_id"})
         if "customer_id" not in df.columns:
             df = df.rename(columns={df.columns[0]: "customer_id"})
-        df["customer_id"] = df["customer_id"].astype(int)
+        df["customer_id"] = df["customer_id"].astype(str)
         df["segment_name"] = (
             df["Cluster"].map(seg_names) if "Cluster" in df.columns else ""
         )
@@ -132,9 +136,19 @@ class StrategyComposerAgent(BaseAgent):
             seg = str(customer.get("segment_name", ""))
             tpl = templates.get(seg, _rule_based_template(seg))
             rows.append(_instantiate(customer, tpl))
+        rows_df = pd.DataFrame(rows)
+        if not rows_df.empty:
+            rows_df = rows_df.sort_values(
+                ["campaign_priority_score", "expected_roi"],
+                ascending=[False, False],
+            )
         return AgentResult(
             agent_name=self.name,
-            payload={"nba": rows, "templates": templates, "summary": _summarise(pd.DataFrame(rows))},
+            payload={
+                "nba": rows_df.to_dict(orient="records"),
+                "templates": templates,
+                "summary": _summarise(rows_df),
+            },
         )
 
 
@@ -145,7 +159,9 @@ def _summarise(df):
         "n_customers": int(len(df)),
         "expected_total_revenue": round(float(df["expected_revenue_per_customer"].sum()), 2),
         "expected_total_cost": round(float(df["cost_per_touch"].sum()), 2),
+        "expected_total_incremental_profit": round(float(df["expected_incremental_profit"].sum()), 2),
         "expected_avg_roi": round(float(df["expected_roi"].mean()), 2),
+        "positive_roi_customers": int((df["expected_roi"] > 0).sum()),
         "top_channels": df["channel"].value_counts().head(5).to_dict(),
         "top_segments": df.groupby("segment_name")["expected_revenue_per_customer"].sum().round(2).head(5).to_dict(),
     }
