@@ -30,6 +30,12 @@
 | **可视化交付** | HTML 业务报告 (Jinja2) + Gradio Chat UI |
 | **工程化** | 统一 config、Mock 数据集、CI smoke test、模块化、22 个单元测试 |
 
+### 最新工程增强
+
+- **营销经济性排序**: Next-Best-Action 现在输出 `expected_incremental_profit` 与 `campaign_priority_score`,Top 10 推荐按增量利润和流失风险排序,更贴近真实预算投放。
+- **稳健流失建模**: LightGBM 在单一标签 / 小样本场景自动降级到可解释启发式分数,避免 demo 数据或冷启动数据直接报错。
+- **更干净的模型评估**: HDBSCAN 只运行一次密度聚类基线,不再在不同 k 上重复相同实验。
+
 ---
 
 ## 🚀 5 分钟启动
