@@ -41,7 +41,7 @@
 ## 🚀 5 分钟启动
 
 ```bash
-git clone https://github.com/<you>/ecommerce-rfm-customer-segmentation.git
+git clone https://github.com/jiayangrui05160031-cmyk/ecommerce-rfm-customer-segmentation.git
 cd ecommerce-rfm-customer-segmentation
 pip install -r requirements.txt
 
