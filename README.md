@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Domain-agnostic](https://img.shields.io/badge/Pipeline-领域无关-orange)](#-通用化-任意-entity-event-数据)
-[![Tests](https://img.shields.io/badge/Tests-22%20unit%20%2B%20smoke-2088ff)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-15%20automated-2088ff)](tests/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?logo=jupyter)](notebooks/)
 
 > **RFM + 多算法聚类 + CLV + Churn 预测 + 3 个 AI Agent** 的端到端客户价值分析流水线。
@@ -27,8 +27,9 @@
 | **Cohort 留存** | 三角留存矩阵 + 队列营收曲线 |
 | **时序预测** | Prophet / Holt-Winters 双路径降级 |
 | **AI Agent 层** | 3 个 Agent: Segment Naming / Strategy Composer (NBA) / Chat-with-Data |
-| **可视化交付** | HTML 业务报告 (Jinja2) + Gradio Chat UI |
-| **工程化** | 统一 config、Mock 数据集、CI smoke test、模块化、22 个单元测试 |
+| **业务服务层** | FastAPI: 分群 / 客户画像 / 预算约束 NBA / A/B 实验决策 |
+| **可视化交付** | HTML 业务报告 (Jinja2) + Gradio Chat UI + Swagger API 文档 |
+| **工程化** | 统一 config、Mock 数据集、CI smoke test、模块化、15 个自动化测试 |
 
 ### 最新工程增强
 
@@ -56,6 +57,41 @@ python run_modern.py --source donation --skip agents forecast
 - `reports/business_report.html` ← 双击打开看完整报告
 - `data/processed/` ← 中间产物 (pkl)
 - 控制台输出聚类对比表 + CLV/Churn 概览 + Agent 命名结果
+
+### 启动业务 API
+
+```bash
+uvicorn app.api:app --reload
+```
+
+打开 `http://127.0.0.1:8000/docs` 可直接在 Swagger UI 中试用：
+
+| Endpoint | 用途 |
+|---|---|
+| `GET /segments` | 分群规模、RFM、流失风险与总 CLV |
+| `GET /customers/{customer_id}` | 单客画像与可解释 Next-Best-Action |
+| `GET /campaign/recommendations?budget=100&limit=50` | 在预算约束下挑选高增量利润客群 |
+| `POST /experiments/analyze` | A/B 转化率显著性、95% CI、增量收入/利润与投放建议 |
+
+实验分析不依赖外部统计服务，也不需要 API Key。示例：
+
+```bash
+curl -X POST http://127.0.0.1:8000/experiments/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "control_visitors": 5000,
+    "control_conversions": 400,
+    "treatment_visitors": 5000,
+    "treatment_conversions": 520,
+    "target_audience": 100000,
+    "value_per_conversion": 120,
+    "cost_per_contact": 0.5
+  }'
+```
+
+响应同时给出 `absolute_lift`、`relative_lift`、`p_value`、
+`confidence_interval_95`、`expected_incremental_profit` 和
+`recommendation`。这样既回答“效果是否真实”，也回答“是否值得扩大投放”。
 
 ### 一行接入你自己的数据
 
@@ -87,15 +123,16 @@ print(result.rfm.head())
 python tests/smoke_test.py
 # [smoke] PASSED in 2.04s
 
-# 22 个单元测试 (~6 秒, 覆盖 mapping/profile/analyze/run_pipeline)
-python -m pytest tests/test_unified_api.py -v
-# 22 passed in 5.92s
+# 运行完整自动化测试（pipeline + API + 营销实验）
+python -m pytest -q
+# 15 passed
 ```
 
 | 测试 | 数量 | 覆盖 |
 |---|---|---|
-| `tests/smoke_test.py` | 1 端到端 | mock 数据 + MockLLM 跑完整 10 步 pipeline |
-| `tests/test_unified_api.py` | 22 单元 | `SchemaMapping` / `DomainProfile` / `profile_inference` / `analyze()` / `run_pipeline()` / 捐赠域 / 旧 API 兼容 |
+| `tests/smoke_test.py` | 1 端到端 | mock 数据 + MockLLM 跑完整 pipeline |
+| `tests/test_marketing_api.py` | 10 单元/契约 | 实验统计、异常校验、分群/单客/预算 API、404/422 契约 |
+| 其他 smoke | 4 | LLM 工厂与基础组件 |
 
 CI 自动跑 (`.github/workflows/smoke.yml`)。
 

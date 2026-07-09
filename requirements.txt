@@ -28,6 +28,8 @@ langchain-community>=0.2.0
 langgraph>=0.1.0
 litellm>=1.40.0
 gradio>=4.30.0
+fastapi>=0.110.0,<1.0.0
+uvicorn>=0.29.0,<1.0.0
 
 # Tests
 pytest>=8.0.0

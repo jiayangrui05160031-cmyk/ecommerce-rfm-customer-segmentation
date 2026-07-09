@@ -49,6 +49,7 @@ data/processed/*.feather
 # 测试临时文件
 *.bak
 test_*.py
+!tests/test_*.py
 # ---- 升级追加 ----
 
 # AI agent artifacts
