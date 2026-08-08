@@ -1,5 +1,7 @@
 ﻿# 电商 RFM 用户分群与精准营销分析
 
+<p align="right"><strong>中文</strong> | <a href="README_EN.md">English</a></p>
+
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Domain-agnostic](https://img.shields.io/badge/Pipeline-领域无关-orange)](#-通用化-任意-entity-event-数据)

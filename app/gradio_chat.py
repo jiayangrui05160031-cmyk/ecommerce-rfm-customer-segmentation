@@ -13,7 +13,7 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.config import get_config, project_root  # noqa: E402
@@ -74,7 +74,6 @@ def build_interface(state, chat):
         examples=EXAMPLE_QUESTIONS,
         title="电商 RFM Chat-with-Data",
         description="基于 RFM + CLV + Churn + Next-Best-Action 的智能问答",
-        theme="default",
     )
 
 

@@ -2,30 +2,37 @@
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: requirements.txt
 
       - name: Install minimal deps
         run: |
-          python -m pip install --upgrade pip
-          pip install pandas numpy scikit-learn matplotlib seaborn pyyaml jinja2 pytest pytest-timeout fastapi httpx
+          python -m pip install pandas numpy scikit-learn matplotlib seaborn pyyaml jinja2 pytest pytest-timeout fastapi httpx
 
       - name: Run smoke test
         run: |
           python tests/smoke_test.py
           python -m pytest -q
 
-      - name: Build Gradio (UI import check)
+      - name: Build Gradio interface
         run: |
-          pip install gradio
-          python -c "import sys; sys.path.insert(0, '.'); from app.gradio_chat import build_state; print('Gradio state builder OK')"
+          python -m pip install gradio
+          python -c "from app.gradio_chat import build_interface, build_state; from src.agents import ChatAgent; state = build_state(); chat = ChatAgent(); chat.bind_state(state); build_interface(state, chat); print('Gradio interface OK')"
