@@ -1,4 +1,4 @@
-<p align="right"><a href="README.md">中文</a> | <strong>English</strong></p>
+<p align="right"><a href="README.md">Chinese</a> | <strong>English</strong></p>
 
 # E-commerce RFM Segmentation and Precision Marketing
 
